@@ -7,6 +7,7 @@ from datetime import datetime
 class PDF(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 16)
+        # [cite_start]Title based on source [cite: 1]
         self.cell(0, 10, 'ETP Daily Operation Sheet', 0, 1, 'C')
         self.ln(5)
 
@@ -18,8 +19,9 @@ class PDF(FPDF):
 # --- Main App Logic ---
 def main():
     st.title("💧 ETP Operation Log App")
+    st.write("You can now enter units like '18 g', '5 kg', or '10 L'.")
 
-    # 1. Inputs
+    # [cite_start]1. Inputs [cite: 1]
     col1, col2, col3 = st.columns(3)
     with col1:
         op_date = st.date_input("Date", datetime.today())
@@ -32,23 +34,39 @@ def main():
 
     st.subheader("Operation Data")
     
-    # 2. Data Table (Renamed columns to remove special symbols)
-    # Using 'm3' instead of the symbol ensures it prints correctly.
+    # [cite_start]2. Data Table Setup [cite: 2]
+    # We use strings ("") for chemicals so you can type "18 g" or "5 kg"
     default_data = pd.DataFrame(
         [{"Sl No.": 1, 
-          "Machine Running Hours ": 0.0, 
+          "Run Hours": 0.0, 
           "Flow Rate (m3/hr)": 0.0, 
-          "Anionic Poly (kg)": 0.0, 
-          "Acqalent (kg/L)": 0.0, 
+          "Anionic Polymer": "0 g",   # Text input allowed
+          "Acqalent": "0 ml",         # Text input allowed
           "Water Treated (m3)": 0.0, 
           "Remarks": ""}],
     )
 
+    # Configure columns to allow text for chemicals
     edited_df = st.data_editor(
         default_data,
         num_rows="dynamic",
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        column_config={
+            "Anionic Polymer": st.column_config.TextColumn(
+                "Anionic Polymer (Qty)",
+                help="Enter amount with unit (e.g., 18 g, 5 kg)",
+                required=True
+            ),
+            "Acqalent": st.column_config.TextColumn(
+                "Acqalent (Qty)",
+                help="Enter amount with unit (e.g., 500 ml, 2 L)",
+                required=True
+            ),
+            "Run Hours": st.column_config.NumberColumn("Run Hours"),
+            "Flow Rate (m3/hr)": st.column_config.NumberColumn("Flow Rate (m3/hr)"),
+            "Water Treated (m3)": st.column_config.NumberColumn("Water Treated (m3)"),
+        }
     )
 
     if st.button("Generate PDF Report"):
@@ -63,34 +81,34 @@ def export_pdf(op_date, shift, operator_name, df):
     pdf.add_page()
     pdf.set_font("Arial", size=10)
 
-    # Print Info Header
-    # Force all text to string to prevent errors
+    # [cite_start]Print Info Header [cite: 1]
     pdf.cell(0, 10, f"Date: {str(op_date)}    Shift: {str(shift)}    Operator: {str(operator_name)}", 0, 1, 'L')
     pdf.ln(5)
 
     # Table Setup
     pdf.set_font("Arial", 'B', 9)
-    col_widths = [15, 30, 40, 40, 40, 40, 60] 
+    # Adjusted widths to fit text inputs
+    col_widths = [15, 30, 35, 45, 45, 40, 55] 
     headers = list(df.columns)
 
     # 1. Print Table Headers
     for i, header in enumerate(headers):
-        # We assume the user creates ASCII headers or uses the defaults
         pdf.cell(col_widths[i], 10, str(header), 1, 0, 'C')
     pdf.ln()
 
     # 2. Print Data Rows
     pdf.set_font("Arial", size=9)
     
-    # Using iloc to get data by position (safer than by name)
     for index, row in df.iterrows():
         try:
-            # We loop through columns by index 0 to 6
             pdf.cell(col_widths[0], 10, str(row.iloc[0]), 1, 0, 'C') # Sl No
             pdf.cell(col_widths[1], 10, str(row.iloc[1]), 1, 0, 'C') # Run Hours
             pdf.cell(col_widths[2], 10, str(row.iloc[2]), 1, 0, 'C') # Flow Rate
+            
+            # These are now text, so they print exactly what you typed (e.g. "18 g")
             pdf.cell(col_widths[3], 10, str(row.iloc[3]), 1, 0, 'C') # Anionic
             pdf.cell(col_widths[4], 10, str(row.iloc[4]), 1, 0, 'C') # Acqalent
+            
             pdf.cell(col_widths[5], 10, str(row.iloc[5]), 1, 0, 'C') # Water Treated
             pdf.cell(col_widths[6], 10, str(row.iloc[6]), 1, 0, 'C') # Remarks
             pdf.ln()
@@ -99,21 +117,20 @@ def export_pdf(op_date, shift, operator_name, df):
 
     pdf.ln(10)
 
-    # Notes
+    # [cite_start]Notes [cite: 3, 4]
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(0, 8, "Notes:", 0, 1)
     pdf.set_font("Arial", size=10)
-    pdf.cell(0, 6, "1. Only Anionic Polymer and Acqalent are recorded.", 0, 1)
+    pdf.cell(0, 6, "1. Anionic Polymer and Acqalent usage recorded with units.", 0, 1)
     pdf.cell(0, 6, "2. Flow rate and water treated recorded as per flow meter.", 0, 1)
 
     pdf.ln(15)
 
-    # Signature
+    # [cite_start]Signature [cite: 5]
     pdf.cell(100, 10, "Checked by: ____________________", 0, 0)
     pdf.cell(100, 10, "Signature: ____________________", 0, 1)
 
     # Create safe output
-    # 'latin-1' encoding handles standard English text and numbers well
     try:
         pdf_output = pdf.output(dest='S').encode('latin-1', 'replace')
         
@@ -125,7 +142,7 @@ def export_pdf(op_date, shift, operator_name, df):
             mime="application/pdf"
         )
     except Exception as e:
-        st.error(f"PDF Creation Failed: {e}. Please ensure you are not using Bengali characters.")
+        st.error(f"PDF Creation Failed: {e}")
 
 if __name__ == "__main__":
     main()
