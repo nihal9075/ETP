@@ -42,7 +42,7 @@ def main():
           "Flow Rate (m3/hr)": 0.0, 
           "Anionic Polymer": "0 g",   # Text input allowed
           "Acqalent": "0 ml",         # Text input allowed
-          "Water Treated (L)": 0.0, 
+          "Water Treated (L)": "0 L", 
           "Remarks": ""}],
     )
 
@@ -88,7 +88,7 @@ def export_pdf(op_date, shift, operator_name, df):
     # Table Setup
     pdf.set_font("Arial", 'B', 9)
     # Adjusted widths to fit text inputs
-    col_widths = [15, 30, 35, 45, 45, 40, 55] 
+    col_widths = [15, 40, 35, 35, 35, 40, 40] 
     headers = list(df.columns)
 
     # 1. Print Table Headers
