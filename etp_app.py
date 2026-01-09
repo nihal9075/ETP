@@ -36,7 +36,7 @@ def main():
     # Using 'm3' instead of the symbol ensures it prints correctly.
     default_data = pd.DataFrame(
         [{"Sl No.": 1, 
-          "Run Hours": 0.0, 
+          "Machine Running Hours ": 0.0, 
           "Flow Rate (m3/hr)": 0.0, 
           "Anionic Poly (kg)": 0.0, 
           "Acqalent (kg/L)": 0.0, 
