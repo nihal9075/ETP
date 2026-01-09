@@ -7,7 +7,6 @@ from datetime import datetime
 class PDF(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 16)
-        # Title from source 
         self.cell(0, 10, 'ETP Daily Operation Sheet', 0, 1, 'C')
         self.ln(5)
 
@@ -19,31 +18,32 @@ class PDF(FPDF):
 # --- Main App Logic ---
 def main():
     st.title("💧 ETP Operation Log App")
-    st.write("Fill in the data below and download your PDF.")
 
-    # 1. Inputs for the Header 
+    # 1. Inputs
     col1, col2, col3 = st.columns(3)
     with col1:
         op_date = st.date_input("Date", datetime.today())
     with col2:
-        shift = st.text_input("Shift", placeholder="e.g., Morning")
+        shift = st.text_input("Shift", placeholder="Morning")
     with col3:
         operator_name = st.text_input("Operator Name")
 
     st.divider()
 
-    # 2. Data Entry Table
-    # Based on columns provided in 
     st.subheader("Operation Data")
     
-    # Initialize an empty dataframe with the specific columns
+    # 2. Data Table (Renamed columns to remove special symbols)
+    # Using 'm3' instead of the symbol ensures it prints correctly.
     default_data = pd.DataFrame(
-        [{"Sl No.": 1, "Machine Running Hours (hr)": 0.0, "Flow Rate (m³/hr)": 0.0, 
-          "Anionic Polymer Used (kg)": 0.0, "Acqalent Used (kg/L)": 0.0, 
-          "Total Water Treated (m³)": 0.0, "Remarks": ""}],
+        [{"Sl No.": 1, 
+          "Run Hours": 0.0, 
+          "Flow Rate (m3/hr)": 0.0, 
+          "Anionic Poly (kg)": 0.0, 
+          "Acqalent (kg/L)": 0.0, 
+          "Water Treated (m3)": 0.0, 
+          "Remarks": ""}],
     )
 
-    # Allow user to add/edit rows
     edited_df = st.data_editor(
         default_data,
         num_rows="dynamic",
@@ -51,7 +51,6 @@ def main():
         hide_index=True
     )
 
-    # 3. Generate PDF Button
     if st.button("Generate PDF Report"):
         if not operator_name:
             st.warning("Please enter an Operator Name.")
@@ -59,65 +58,74 @@ def main():
             export_pdf(op_date, shift, operator_name, edited_df)
 
 def export_pdf(op_date, shift, operator_name, df):
-    pdf = PDF(orientation='L', unit='mm', format='A4') # Landscape for wide tables
+    # Setup PDF
+    pdf = PDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font("Arial", size=10)
 
-    # Add Header Info 
-    pdf.cell(0, 10, f"Date: {op_date}    Shift: {shift}    Operator Name: {operator_name}", 0, 1, 'L')
+    # Print Info Header
+    # Force all text to string to prevent errors
+    pdf.cell(0, 10, f"Date: {str(op_date)}    Shift: {str(shift)}    Operator: {str(operator_name)}", 0, 1, 'L')
     pdf.ln(5)
 
-    # Table Header Settings
+    # Table Setup
     pdf.set_font("Arial", 'B', 9)
-    # Column widths based on content 
-    # Sl No, Hrs, Flow, Anionic, Acqalent, Total Water, Remarks
-    col_widths = [15, 45, 35, 40, 40, 40, 50] 
-    headers = df.columns.tolist()
+    col_widths = [15, 30, 40, 40, 40, 40, 60] 
+    headers = list(df.columns)
 
-    # Draw Header Row
+    # 1. Print Table Headers
     for i, header in enumerate(headers):
-        # clean up header text for pdf fit
-        text = header.replace("(hr)", "").replace("(m³/hr)", "").replace("(kg)", "").replace("(kg/L)", "").replace("(m³)", "")
-        pdf.cell(col_widths[i], 10, text, 1, 0, 'C')
+        # We assume the user creates ASCII headers or uses the defaults
+        pdf.cell(col_widths[i], 10, str(header), 1, 0, 'C')
     pdf.ln()
 
-    # Draw Data Rows
+    # 2. Print Data Rows
     pdf.set_font("Arial", size=9)
+    
+    # Using iloc to get data by position (safer than by name)
     for index, row in df.iterrows():
-        pdf.cell(col_widths[0], 10, str(row['Sl No.']), 1, 0, 'C')
-        pdf.cell(col_widths[1], 10, str(row['Machine Running Hours (hr)']), 1, 0, 'C')
-        pdf.cell(col_widths[2], 10, str(row['Flow Rate (m³/hr)']), 1, 0, 'C')
-        pdf.cell(col_widths[3], 10, str(row['Anionic Polymer Used (kg)']), 1, 0, 'C')
-        pdf.cell(col_widths[4], 10, str(row['Acqalent Used (kg/L)']), 1, 0, 'C')
-        pdf.cell(col_widths[5], 10, str(row['Total Water Treated (m³)']), 1, 0, 'C')
-        pdf.cell(col_widths[6], 10, str(row['Remarks']), 1, 0, 'C')
-        pdf.ln()
+        try:
+            # We loop through columns by index 0 to 6
+            pdf.cell(col_widths[0], 10, str(row.iloc[0]), 1, 0, 'C') # Sl No
+            pdf.cell(col_widths[1], 10, str(row.iloc[1]), 1, 0, 'C') # Run Hours
+            pdf.cell(col_widths[2], 10, str(row.iloc[2]), 1, 0, 'C') # Flow Rate
+            pdf.cell(col_widths[3], 10, str(row.iloc[3]), 1, 0, 'C') # Anionic
+            pdf.cell(col_widths[4], 10, str(row.iloc[4]), 1, 0, 'C') # Acqalent
+            pdf.cell(col_widths[5], 10, str(row.iloc[5]), 1, 0, 'C') # Water Treated
+            pdf.cell(col_widths[6], 10, str(row.iloc[6]), 1, 0, 'C') # Remarks
+            pdf.ln()
+        except Exception as e:
+            st.error(f"Error printing row {index}: {e}")
 
     pdf.ln(10)
 
-    # Notes Section 
+    # Notes
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(0, 8, "Notes:", 0, 1)
     pdf.set_font("Arial", size=10)
-    pdf.cell(0, 6, "1. Only Anionic Polymer and its Acqalent are recorded in this sheet.", 0, 1)
-    pdf.cell(0, 6, "2. Flow rate and water treated should be recorded as per flow meter reading.", 0, 1)
+    pdf.cell(0, 6, "1. Only Anionic Polymer and Acqalent are recorded.", 0, 1)
+    pdf.cell(0, 6, "2. Flow rate and water treated recorded as per flow meter.", 0, 1)
 
     pdf.ln(15)
 
-    # Signature Section 
+    # Signature
     pdf.cell(100, 10, "Checked by: ____________________", 0, 0)
     pdf.cell(100, 10, "Signature: ____________________", 0, 1)
 
-    # Output
-    pdf_output = pdf.output(dest='S').encode('latin-1')
-    
-    st.success("PDF Generated Successfully!")
-    st.download_button(
-        label="Download PDF Sheet",
-        data=pdf_output,
-        file_name=f"ETP_Sheet_{op_date}.pdf",
-        mime="application/pdf"
-    )
+    # Create safe output
+    # 'latin-1' encoding handles standard English text and numbers well
+    try:
+        pdf_output = pdf.output(dest='S').encode('latin-1', 'replace')
+        
+        st.success("PDF Generated Successfully!")
+        st.download_button(
+            label="Download PDF Sheet",
+            data=pdf_output,
+            file_name=f"ETP_Sheet_{op_date}.pdf",
+            mime="application/pdf"
+        )
+    except Exception as e:
+        st.error(f"PDF Creation Failed: {e}. Please ensure you are not using Bengali characters.")
 
 if __name__ == "__main__":
     main()
