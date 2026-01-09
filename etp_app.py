@@ -38,11 +38,11 @@ def main():
     # We use strings ("") for chemicals so you can type "18 g" or "5 kg"
     default_data = pd.DataFrame(
         [{"Sl No.": 1, 
-          "Run Hours": 0.0, 
+          "Machine Running Hours ": 0.0, 
           "Flow Rate (m3/hr)": 0.0, 
           "Anionic Polymer": "0 g",   # Text input allowed
           "Acqalent": "0 ml",         # Text input allowed
-          "Water Treated (m3)": 0.0, 
+          "Water Treated (L)": 0.0, 
           "Remarks": ""}],
     )
 
