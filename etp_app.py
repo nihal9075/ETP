@@ -132,7 +132,7 @@ def export_pdf(op_date, shift, operator_name, df, notes):
     if notes:
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 10)
-        pdf.cell(0, 6, "Operator Observations / Logs:", 0, 1)
+        pdf.cell(0, 6, "Notes:", 0, 1)
         pdf.set_font("Arial", size=10)
         # multi_cell allows text to wrap to the next line automatically
         pdf.multi_cell(0, 5, notes)
