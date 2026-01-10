@@ -39,7 +39,7 @@ def main():
           "Flow Rate (m3/hr)": 0.0, 
           "Anionic Polymer": "0 g",   
           "Acqalent": "0 ml",         
-          "Water Treated (m3)": 0.0, 
+          "Water Treated (L)": 0.0, 
           "Remarks": ""}],
     )
 
