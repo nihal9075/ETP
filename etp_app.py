@@ -18,7 +18,7 @@ class PDF(FPDF):
 # --- Main App Logic ---
 def main():
     st.title("💧 ETP Operation Log App")
-    st.write("Fill in the daily data, add notes, and generate your report.")
+    st.write("Fill data in English/Numbers only (বাংলা পিডিএফ-এ আসবে না).")
 
     # 1. Header Inputs
     col1, col2, col3 = st.columns(3)
@@ -32,14 +32,14 @@ def main():
     st.divider()
 
     # 2. Data Table Setup
-    st.subheader("Operation Data")
+    st.subheader("1. Operation Data")
     default_data = pd.DataFrame(
         [{"Sl No.": 1, 
-          "Water Treated Hours": 0.0, 
+          "Run Hours": 0.0, 
           "Flow Rate (m3/hr)": 0.0, 
           "Anionic Polymer": "0 g",   
           "Acqalent": "0 ml",         
-          "Water Treated (L)": 0.0, 
+          "Water Treated (m3)": 0.0, 
           "Remarks": ""}],
     )
 
@@ -67,24 +67,46 @@ def main():
 
     st.divider()
 
-    # 3. NEW: Additional Notes Section
-    st.subheader("📝 Additional Notes")
+    # 3. NEW: Optional Time Log Section
+    st.subheader("2. Machine Run Time Log (Optional)")
+    add_time_log = st.checkbox("Add Time Log to PDF? (সময় তালিকা যুক্ত করতে চান?)")
+    
+    time_log_text = ""
+    if add_time_log:
+        st.info("Write your schedule below clearly.")
+        # Default example text based on user request
+        default_log = (
+            "Water Treated Run - 08.00am\n"
+            "Water Treated Off - 01.00pm\n\n"
+            "Water Treated Run - 02.00pm\n"
+            "Water Treated Off - 07.00pm\n\n"
+            "Water Treated Run - 07.20pm\n"
+            "Water Treated Off - 11.00pm\n"
+            "Total Time: 13.40hr"
+        )
+        time_log_text = st.text_area("Enter Run/Off Schedule:", value=default_log, height=200)
+
+    st.divider()
+
+    # 4. Operator Notes
+    st.subheader("3. Other Observations")
     operator_notes = st.text_area(
-        "Write any special observations, issues, or maintenance notes here:",
-        height=100,
-        placeholder="Example: Motor 2 sound was high today. Cleaning performed at 2 PM."
+        "Write any other special notes here:",
+        height=80,
+        placeholder="Example: Motor cleaning done."
     )
 
     st.divider()
 
-    # 4. Generate Button
+    # 5. Generate Button
     if st.button("Generate PDF Report", type="primary"):
         if not operator_name:
             st.warning("Please enter an Operator Name first.")
         else:
-            export_pdf(op_date, shift, operator_name, edited_df, operator_notes)
+            # Pass the new time_log_text to the export function
+            export_pdf(op_date, shift, operator_name, edited_df, operator_notes, time_log_text)
 
-def export_pdf(op_date, shift, operator_name, df, notes):
+def export_pdf(op_date, shift, operator_name, df, notes, time_log):
     # Setup PDF
     pdf = PDF(orientation='L', unit='mm', format='A4')
     pdf.add_page()
@@ -96,7 +118,7 @@ def export_pdf(op_date, shift, operator_name, df, notes):
 
     # Table Setup
     pdf.set_font("Arial", 'B', 9)
-    col_widths = [15, 40, 35, 45, 45, 40, 55] 
+    col_widths = [15, 30, 35, 45, 45, 40, 55] 
     headers = list(df.columns)
 
     # Print Table Headers
@@ -121,6 +143,15 @@ def export_pdf(op_date, shift, operator_name, df, notes):
 
     pdf.ln(10)
 
+    # --- NEW: Time Log Section (Only prints if user checked the box) ---
+    if time_log:
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(0, 6, "Machine Run Time Schedule:", 0, 1)
+        pdf.set_font("Arial", size=10)
+        # Multi_cell handles the new lines automatically
+        pdf.multi_cell(0, 5, time_log)
+        pdf.ln(5)
+
     # Standard Notes
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(0, 6, "Standard Notes:", 0, 1)
@@ -128,20 +159,18 @@ def export_pdf(op_date, shift, operator_name, df, notes):
     pdf.cell(0, 5, "1. Anionic Polymer and Acqalent usage recorded with units.", 0, 1)
     pdf.cell(0, 5, "2. Flow rate and water treated recorded as per flow meter.", 0, 1)
 
-    # NEW: Operator Custom Notes (only prints if you wrote something)
+    # Operator Custom Notes
     if notes:
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 10)
-        pdf.cell(0, 6, "Notes:", 0, 1)
+        pdf.cell(0, 6, "Other Observations:", 0, 1)
         pdf.set_font("Arial", size=10)
-        # multi_cell allows text to wrap to the next line automatically
         pdf.multi_cell(0, 5, notes)
 
     pdf.ln(15)
 
     # Signature
-    # Check if we are near the bottom of the page, if so, add a page
-    if pdf.get_y() > 180:
+    if pdf.get_y() > 170:
         pdf.add_page()
         
     pdf.cell(100, 10, "Checked by: ____________________", 0, 0)
