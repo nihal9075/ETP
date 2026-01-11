@@ -35,11 +35,11 @@ def main():
     st.subheader("1. Operation Data")
     default_data = pd.DataFrame(
         [{"Sl No.": 1, 
-          "Run Hours": 0.0, 
+          "Water Treated Hours": 0.0, 
           "Flow Rate (m3/hr)": 0.0, 
           "Anionic Polymer": "0 g",   
-          "Acqalent": "0 ml",         
-          "Water Treated (m3)": 0.0, 
+          "Acqalent": "0 L",         
+          "Water Treated (L)": 0.0, 
           "Remarks": ""}],
     )
 
@@ -118,7 +118,7 @@ def export_pdf(op_date, shift, operator_name, df, notes, time_log):
 
     # Table Setup
     pdf.set_font("Arial", 'B', 9)
-    col_widths = [15, 30, 35, 45, 45, 40, 55] 
+    col_widths = [15, 40, 35, 40, 40, 40, 55] 
     headers = list(df.columns)
 
     # Print Table Headers
